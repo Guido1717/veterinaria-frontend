@@ -1,0 +1,266 @@
+<header class="cabecera">
+  <div class="cabecera__texto">
+    <p class="miga">Clínica Veterinaria <span aria-hidden="true">›</span> {{ entidad.titulo }}</p>
+    <h1 class="cabecera__titulo">
+      <span class="cabecera__icono icono" aria-hidden="true">{{ entidad.icono }}</span>
+      {{ entidad.titulo }}
+    </h1>
+    <p class="cabecera__descripcion">{{ entidad.descripcion }}</p>
+  </div>
+
+  <div class="cabecera__acciones">
+    <form class="buscador" (ngSubmit)="buscarPorId()" role="search">
+      <span class="icono" aria-hidden="true">search</span>
+      <input
+        type="number"
+        min="1"
+        name="idBuscado"
+        [(ngModel)]="idBuscado"
+        placeholder="Consultar por id"
+        aria-label="Id del registro a consultar"
+      />
+      <button type="submit" class="boton boton--suave" [disabled]="ocupado()">Consultar</button>
+    </form>
+    <button type="button" class="boton boton--primario" (click)="abrirCrear()">
+      <span class="icono" aria-hidden="true">add</span>
+      {{ entidad.genero === 'f' ? 'Nueva' : 'Nuevo' }} {{ entidad.singular.toLowerCase() }}
+    </button>
+  </div>
+</header>
+
+<section class="tarjeta" [attr.aria-busy]="cargando()">
+  <div class="tarjeta__barra">
+    <p class="contador">
+      <strong>{{ registros().length }}</strong>
+      {{ registros().length === 1 ? 'registro' : 'registros' }}
+    </p>
+    <button type="button" class="boton boton--fantasma" (click)="cargar()" [disabled]="cargando()">
+      <span class="icono" [class.girando]="cargando()" aria-hidden="true">refresh</span>
+      Actualizar
+    </button>
+  </div>
+
+  @if (cargando() && registros().length === 0) {
+    <div class="esqueleto" aria-label="Cargando registros">
+      @for (fila of [1, 2, 3]; track fila) {
+        <span class="esqueleto__fila"></span>
+      }
+    </div>
+  } @else if (errorCarga()) {
+    <div class="vacio vacio--error">
+      <span class="icono" aria-hidden="true">cloud_off</span>
+      <h2>No se pudo cargar {{ entidad.titulo.toLowerCase() }}</h2>
+      <p>{{ errorCarga() }}</p>
+      <button type="button" class="boton boton--primario" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (registros().length === 0) {
+    <div class="vacio">
+      <span class="icono" aria-hidden="true">{{ entidad.icono }}</span>
+      <h2>Todavía no hay {{ entidad.titulo.toLowerCase() }}</h2>
+      <p>Registra {{ entidad.genero === 'f' ? 'la primera' : 'el primero' }} para empezar.</p>
+      <button type="button" class="boton boton--primario" (click)="abrirCrear()">
+        <span class="icono" aria-hidden="true">add</span>
+        {{ entidad.genero === 'f' ? 'Nueva' : 'Nuevo' }} {{ entidad.singular.toLowerCase() }}
+      </button>
+    </div>
+  } @else {
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th scope="col" class="tabla__id">Id</th>
+            @for (campo of entidad.campos; track campo.nombre) {
+              <th scope="col">{{ campo.etiqueta }}</th>
+            }
+            <th scope="col" class="tabla__acciones"><span class="solo-lector">Acciones</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (registro of registros(); track registro.id) {
+            <tr>
+              <td class="tabla__id"><span class="chip-id">#{{ registro.id }}</span></td>
+              @for (campo of entidad.campos; track campo.nombre) {
+                <td [class.tabla__largo]="campo.tipo === 'texto-largo'">
+                  @if (campo.tipo === 'opciones') {
+                    <span class="insignia" [attr.data-valor]="registro[campo.nombre]">{{ mostrar(registro, campo) }}</span>
+                  } @else if (campo.tipo === 'relacion') {
+                    <span class="enlace-relacion">{{ mostrar(registro, campo) }}</span>
+                  } @else {
+                    {{ mostrar(registro, campo) }}
+                  }
+                </td>
+              }
+              <td class="tabla__acciones">
+                <div class="acciones">
+                  <button type="button" class="boton-icono" (click)="ver(registro.id)" [disabled]="ocupado()" [attr.aria-label]="'Ver ' + nombreDe(registro)" data-tooltip="Ver">
+                    <span class="icono" aria-hidden="true">visibility</span>
+                  </button>
+                  <button type="button" class="boton-icono" (click)="editar(registro.id)" [disabled]="ocupado()" [attr.aria-label]="'Editar ' + nombreDe(registro)" data-tooltip="Editar">
+                    <span class="icono" aria-hidden="true">edit</span>
+                  </button>
+                  <button type="button" class="boton-icono boton-icono--peligro" (click)="pedirConfirmacion(registro)" [disabled]="ocupado()" [attr.aria-label]="'Eliminar ' + nombreDe(registro)" data-tooltip="Eliminar">
+                    <span class="icono" aria-hidden="true">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+@if (panel(); as p) {
+  <div class="velo" (click)="cerrarPanel()" aria-hidden="true"></div>
+  <aside class="panel" role="dialog" aria-modal="true" [attr.aria-label]="tituloPanel()">
+    <header class="panel__cabeza">
+      <div>
+        <p class="panel__antetitulo">
+          {{ p.modo === 'ver' ? 'Detalle · GET /' + entidad.recurso + '/' + p.registro?.id : p.modo === 'crear' ? 'Registro nuevo · POST' : 'Edición · PUT' }}
+        </p>
+        <h2>{{ tituloPanel() }}</h2>
+      </div>
+      <button type="button" class="boton-icono" (click)="cerrarPanel()" aria-label="Cerrar panel">
+        <span class="icono" aria-hidden="true">close</span>
+      </button>
+    </header>
+
+    @if (p.modo === 'ver' && p.registro; as registro) {
+      <dl class="detalle">
+        <div class="detalle__fila">
+          <dt>Id</dt>
+          <dd><span class="chip-id">#{{ registro.id }}</span></dd>
+        </div>
+        @for (campo of entidad.campos; track campo.nombre) {
+          <div class="detalle__fila">
+            <dt>{{ campo.etiqueta }}</dt>
+            <dd>
+              @if (campo.tipo === 'opciones') {
+                <span class="insignia" [attr.data-valor]="registro[campo.nombre]">{{ mostrar(registro, campo) }}</span>
+              } @else {
+                {{ mostrar(registro, campo) }}
+              }
+            </dd>
+          </div>
+        }
+      </dl>
+      <footer class="panel__pie">
+        <button type="button" class="boton boton--fantasma" (click)="cerrarPanel()">Cerrar</button>
+        <button type="button" class="boton boton--primario" (click)="editar(registro.id)" [disabled]="ocupado()">
+          <span class="icono" aria-hidden="true">edit</span>
+          Editar
+        </button>
+      </footer>
+    } @else {
+      <form class="formulario" #formulario="ngForm" (ngSubmit)="guardar(formulario)" novalidate>
+        <div class="formulario__campos">
+          @for (campo of camposFormulario(); track campo.nombre) {
+            @let control = formulario.controls[campo.nombre];
+            @let conError = !!control && control.invalid && control.touched;
+            <label class="campo" [class.campo--invalido]="conError">
+              <span class="campo__etiqueta">
+                {{ campo.etiqueta }}
+                @if (campo.requerido) {
+                  <span class="campo__obligatorio" aria-hidden="true">*</span>
+                }
+              </span>
+
+              @switch (campo.tipo) {
+                @case ('texto-largo') {
+                  <textarea
+                    rows="3"
+                    [name]="campo.nombre"
+                    [(ngModel)]="valores[campo.nombre]"
+                    [required]="!!campo.requerido"
+                    [maxlength]="campo.max ?? null"
+                  ></textarea>
+                }
+                @case ('numero') {
+                  <input
+                    type="number"
+                    step="1"
+                    [name]="campo.nombre"
+                    [(ngModel)]="valores[campo.nombre]"
+                    [required]="!!campo.requerido"
+                    [min]="campo.min ?? null"
+                  />
+                }
+                @case ('fecha') {
+                  <input
+                    type="date"
+                    [name]="campo.nombre"
+                    [(ngModel)]="valores[campo.nombre]"
+                    [required]="!!campo.requerido"
+                  />
+                }
+                @case ('opciones') {
+                  <select [name]="campo.nombre" [(ngModel)]="valores[campo.nombre]" [required]="!!campo.requerido">
+                    @for (opcion of campo.opciones; track opcion) {
+                      <option [ngValue]="opcion">{{ opcion }}</option>
+                    }
+                  </select>
+                }
+                @case ('relacion') {
+                  <select [name]="campo.nombre" [(ngModel)]="valores[campo.nombre]" [required]="!!campo.requerido">
+                    <option [ngValue]="null" disabled>Selecciona…</option>
+                    @for (opcion of opcionesDe(campo); track opcion.id) {
+                      <option [ngValue]="opcion.id">#{{ opcion.id }} · {{ etiquetaDe(campo, opcion) }}</option>
+                    }
+                  </select>
+                }
+                @default {
+                  <input
+                    [type]="campo.tipo === 'telefono' ? 'tel' : 'text'"
+                    [name]="campo.nombre"
+                    [(ngModel)]="valores[campo.nombre]"
+                    [required]="!!campo.requerido"
+                    [maxlength]="campo.max ?? null"
+                  />
+                }
+              }
+
+              @if (conError) {
+                <span class="campo__error">
+                  @if (control?.errors?.['required']) {
+                    Este campo es obligatorio.
+                  } @else if (control?.errors?.['min']) {
+                    El valor mínimo es {{ campo.min }}.
+                  } @else {
+                    Valor no válido.
+                  }
+                </span>
+              } @else if (campo.ayuda) {
+                <span class="campo__ayuda">{{ campo.ayuda }}</span>
+              } @else if (campo.max) {
+                <span class="campo__ayuda">Máximo {{ campo.max }} caracteres.</span>
+              }
+            </label>
+          }
+        </div>
+
+        <footer class="panel__pie">
+          <button type="button" class="boton boton--fantasma" (click)="cerrarPanel()" [disabled]="ocupado()">Cancelar</button>
+          <button type="submit" class="boton boton--primario" [disabled]="ocupado()">
+            <span class="icono" aria-hidden="true">{{ ocupado() ? 'progress_activity' : 'check' }}</span>
+            {{ p.modo === 'crear' ? 'Crear' : 'Guardar cambios' }}
+          </button>
+        </footer>
+      </form>
+    }
+  </aside>
+}
+
+@if (porEliminar(); as registro) {
+  <div class="velo velo--centro" (click)="porEliminar.set(null)">
+    <div class="confirmacion" role="alertdialog" aria-modal="true" aria-labelledby="titulo-confirmacion" (click)="$event.stopPropagation()">
+      <span class="confirmacion__icono icono" aria-hidden="true">delete_forever</span>
+      <h2 id="titulo-confirmacion">¿Eliminar {{ entidad.singular.toLowerCase() }} #{{ registro.id }}?</h2>
+      <p>“{{ nombreDe(registro) }}” se borrará de la base de datos. Esta acción no se puede deshacer.</p>
+      <div class="confirmacion__acciones">
+        <button type="button" class="boton boton--fantasma" (click)="porEliminar.set(null)" [disabled]="ocupado()">Cancelar</button>
+        <button type="button" class="boton boton--peligro" (click)="eliminar()" [disabled]="ocupado()">Eliminar</button>
+      </div>
+    </div>
+  </div>
+}

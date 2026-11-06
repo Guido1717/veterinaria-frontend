@@ -1,0 +1,63 @@
+<div class="app" [class.app--retraida]="retraido()">
+  <aside class="menu" aria-label="Menú principal">
+    <div class="menu__cabeza">
+      <a class="menu__marca" routerLink="/" aria-label="Inicio">
+        <span class="menu__logo icono" aria-hidden="true">pets</span>
+        <span class="menu__marca-texto">
+          <strong>Clínica Veterinaria</strong>
+          <small>Panel de gestión</small>
+        </span>
+      </a>
+    </div>
+
+    <button
+      type="button"
+      class="menu__alternar"
+      (click)="alternarMenu()"
+      [attr.aria-expanded]="!retraido()"
+      [attr.aria-label]="retraido() ? 'Expandir menú' : 'Retraer menú'"
+      [attr.data-tooltip]="retraido() ? 'Expandir menú' : null"
+    >
+      <span class="icono" aria-hidden="true">{{ retraido() ? 'left_panel_open' : 'left_panel_close' }}</span>
+      <span class="menu__texto">Retraer menú</span>
+    </button>
+
+    <nav class="menu__nav">
+      <p class="menu__seccion">Módulos</p>
+      @for (entidad of entidades; track entidad.clave) {
+        <a
+          class="menu__enlace"
+          [routerLink]="'/' + entidad.ruta"
+          routerLinkActive="menu__enlace--activo"
+          ariaCurrentWhenActive="page"
+          [attr.data-tooltip]="retraido() ? entidad.titulo : null"
+          [attr.aria-label]="entidad.titulo"
+        >
+          <span class="icono" aria-hidden="true">{{ entidad.icono }}</span>
+          <span class="menu__texto">{{ entidad.titulo }}</span>
+        </a>
+      }
+    </nav>
+
+    <p class="menu__pie" [attr.data-tooltip]="retraido() ? 'API: ' + apiUrl : null">
+      <span class="punto-vivo" aria-hidden="true"></span>
+      <span class="menu__texto">API · {{ apiUrl }}</span>
+    </p>
+  </aside>
+
+  <main class="contenido">
+    <router-outlet />
+  </main>
+</div>
+
+<div class="avisos" aria-live="polite">
+  @for (aviso of avisos.avisos(); track aviso.id) {
+    <div class="aviso" [class.aviso--error]="aviso.tipo === 'error'" role="status">
+      <span class="icono" aria-hidden="true">{{ aviso.tipo === 'exito' ? 'check_circle' : 'error' }}</span>
+      <p>{{ aviso.texto }}</p>
+      <button type="button" class="boton-icono boton-icono--claro" (click)="avisos.cerrar(aviso.id)" aria-label="Cerrar aviso">
+        <span class="icono" aria-hidden="true">close</span>
+      </button>
+    </div>
+  }
+</div>
