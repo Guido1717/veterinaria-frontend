@@ -18,10 +18,10 @@ Esa URL está en [`src/environments/environment.ts`](src/environments/environmen
 
 ### 1. Backend (API)
 
-Requisitos: Python 3.12 y una base PostgreSQL en Neon.
+Requisitos: Python 3.12 y una base PostgreSQL en Neon. La API está en la rama `prod` del repositorio.
 
 ```bash
-git clone https://github.com/Guido1717/proyecto-veterinaria.git
+git clone -b prod https://github.com/Guido1717/proyecto-veterinaria.git
 cd proyecto-veterinaria
 python -m venv .venv
 .venv\Scripts\activate          # Windows (en Linux/macOS: source .venv/bin/activate)
