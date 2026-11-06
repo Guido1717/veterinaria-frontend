@@ -39,7 +39,7 @@ La API queda en `http://localhost:8000`, con Swagger en `http://localhost:8000/d
 Requisitos: Node.js 22.22+, 24.15+ o 26+ (con npm).
 
 ```bash
-git clone <url-de-este-repositorio>
+git clone https://github.com/Guido1717/veterinaria-frontend.git
 cd veterinaria-frontend
 npm install
 npm start
